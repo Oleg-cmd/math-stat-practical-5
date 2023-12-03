@@ -3,33 +3,30 @@ import numpy as np
 import math
 from itertools import groupby
 
-# Выполнение сразу будет записываться в TeX файл
+
 answer_file = open("tex/main.tex", "w")
-# Шапка для включения стилей и вывода титульного листа
+
 answer_file.write("\\input{./tex/preamble}\n")
 answer_file.write("\\begin{document}\n")
-# Костыльно реализуем input{title} из-за каких-то проблем с кодировкой среды разработки...
+
 with open("tex/title.tex", "r", encoding="utf-8") as file:
     for line in file.readlines():
         answer_file.write(line.lstrip())
-# answer_file.write('\\input{title}\n')
+
 answer_file.write("\\newpage\n")
 answer_file.write("\\smallskip\n")
 
 
-# Для обозначения заголовков разделов
 def header_maker(title):
     answer_file.write("\\textbf{\\large " + title + "}\n\n")
     answer_file.write("\\smallskip\n")
 
 
-# Для обозначения разделов
 def title_maker(title):
     answer_file.write("\\textbf{\\LARGE " + title + "}\n\n")
     answer_file.write("\\smallskip\n")
 
 
-# Для ввода какого-то текста
 def some_text(text):
     answer_file.write(f"\\parindent=0mm{text}\\\\\n")
 
@@ -75,6 +72,7 @@ def table_maker(data, flag):
 interval_data = []
 
 
+# График интервалов
 def interval_table_maker(data, h):
     # Количество интервалов
     m = 1 + math.log(len(data), 2)
@@ -105,16 +103,25 @@ def interval_table_maker(data, h):
     answer_file.write("\\end{adjustbox}\n")
 
 
-# Для рисования совокупностей
+# Для рисования совокупностей (функция)
 def collection_maker(data):
     answer_file.write("Для исходной выборки $$F_n^*(x) = \\begin{cases}\n")
     answer_file.write(f"0 & \\text{{при }} x < {data[0]}\\\\\n")
-    for number in range(1, len(data)):
+    for number in range(2, len(data)):
+        sum = get_all(data, number)
         answer_file.write(
-            f"{number / len(data)} & \\text{{при }} {data[number - 1]}\\leq x < {data[number]}\\\\\n"
+            f"{sum} & \\text{{при }} {data[number - 1]}\\leq x < {data[number]}\\\\\n"
         )
     answer_file.write(f"1 & \\text{{при }} x \\geq {data[-1]}\n")
     answer_file.write("\\end{cases}$$\n")
+
+
+def get_all(data, number):
+    sum = 0
+    for i in range(1, number):
+        sum += data.count(data[i])
+    sum = round(sum / len(data), 3)
+    return sum
 
 
 # Для графика эмпирической функции распределения
@@ -147,7 +154,7 @@ def empirical_graph(data):
     )
 
 
-# Для гистограммы
+# Для графика гистограммы
 def bar_chart_maker():
     global interval_data
     intervals = [f"[{interval[0]:.4f};{interval[1]:.4f})" for interval in interval_data]
@@ -226,8 +233,10 @@ some_text(
 header_maker("Вариант №12")
 table_maker(selection, False)
 title_maker("Выполнение")
+
 # Отсортированная по неубыванию выборка:
 sorted_selection = sorted(selection)
+print(sorted_selection)
 header_maker("Вариационный ряд")
 table_maker(sorted_selection, False)
 header_maker("Статистический ряд")
@@ -251,7 +260,7 @@ some_text(
     f" считается по формуле:"
     f" $$\\overline{{x_B}} = \\frac{{1}}{{n}} \sum_{{i=1}}^k x_i\cdot n_i$$"
 )
-# Реализация
+# Реализация (Математическое ожидание)
 x_B = 0
 for i in set(sorted_selection):
     x_B += i * sorted_selection.count(i) / len(sorted_selection)
@@ -263,7 +272,7 @@ some_text(
     f" значений выборки от выборочной средней $\\overline{{x_B}}$, считается по формуле:"
     f" $$D_B = \\frac{{1}}{{n}} \sum_{{i=1}}^k (x_i - \\overline{{x_B}})^2 \cdot n_i$$"
 )
-# Реализация
+# Реализация (Дисперсия)
 D_B = 0
 for i in set(sorted_selection):
     D_B += (i - x_B) ** 2 * sorted_selection.count(i) / len(sorted_selection)
@@ -275,6 +284,7 @@ some_text(
     f" $$\\sigma_B = \\sqrt{{D_B}}$$"
 )
 
+# Реализация (Среднеквадратическое отклонение)
 some_text(f"Для исходной выборки $$\\sigma_B = {round(math.sqrt(D_B), 6)}$$")
 header_maker("Исправленное выборочное среднее квадратическое отклонение")
 some_text(
@@ -285,6 +295,7 @@ some_text(
 some_text(
     f" Величина $S = \\sqrt{{S^2}}$ называется исправленным выборочным средним квадратическим отклонением"
 )
+# Реализация (Исправленное выборочное среднее квадратическое отклонение)
 some_text(
     f"Для исходной выборки $$S = {round(math.sqrt(D_B * len(selection) / (len(selection) - 1)), 6)}$$"
 )
@@ -307,6 +318,7 @@ some_text(
     " Пользуясь формулой Стерджеса, найдем величину интервала"
     " $$h = \\frac{{x_{{max}} - x_{{min}}}}{{1 + log_2 n}}$$"
 )
+# Интервальный статистический ряд
 h = (sorted_selection[-1] - sorted_selection[0]) / (
     1 + math.log(len(sorted_selection), 2)
 )
@@ -316,9 +328,6 @@ some_text(
 )
 interval_table_maker(sorted_selection, h)
 bar_chart_maker()
-# Для нормального отображения графика
 frequency_polygon_maker()
-# Завершение документа
 answer_file.write("\end{document}")
-# Закрытие файла
 answer_file.close()
